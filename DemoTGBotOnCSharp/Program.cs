@@ -1,4 +1,5 @@
-﻿using DotNetEnv;
+﻿using DemoTGBotOnCSharp.Handler;
+using DotNetEnv;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types.Enums;
@@ -22,11 +23,11 @@ namespace DemoTGBotOnCSharp
             {
                 // 3. Загружаем указанный пользователем файл через DotNetEnv
                 Env.Load(path);
-                Console.WriteLine("Конфигурация из .env успешно загружена с помощью DotNetEnv.");
+                Console.WriteLine("Configuration succesfuly loaded from .env file.");
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Console.WriteLine($"Ошибка при чтении файла через DotNetEnv: {ex.Message}");
+                Console.WriteLine($"Error reading the file by DotNetEnv: {e.Message}");
                 return;
             }
 
@@ -34,14 +35,14 @@ namespace DemoTGBotOnCSharp
 
             if (string.IsNullOrEmpty(botToken))
             {
-                Console.WriteLine("Bot token не найден");
+                Console.WriteLine("Bot token not found in .env file");
                 return;
             }
            
             var botClient = new TelegramBotClient(botToken);
 
             var me = await botClient.GetMe();
-            Console.WriteLine($"Бот {me.Username} запущен");
+            Console.WriteLine($"Bot {me.Username} started");
 
             var recieverOptions = new ReceiverOptions
             {
@@ -50,7 +51,7 @@ namespace DemoTGBotOnCSharp
             };
 
             using var cts = new CancellationTokenSource();
-
+            
             botClient.StartReceiving(
                 updateHandler: BotHandler.HandleUpdateAsync,
                 errorHandler: BotHandler.HandlePollingErrorAsync,
