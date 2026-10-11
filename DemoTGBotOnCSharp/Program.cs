@@ -2,6 +2,7 @@
 using DotNetEnv;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace DemoTGBotOnCSharp
@@ -43,6 +44,14 @@ namespace DemoTGBotOnCSharp
 
             var me = await botClient.GetMe();
             Console.WriteLine($"Bot {me.Username} started");
+            try
+            {
+                await ConfigureBotCommandAsync(botClient);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidCastException(e.Message);
+            }
 
             var recieverOptions = new ReceiverOptions
             {
@@ -60,6 +69,20 @@ namespace DemoTGBotOnCSharp
 
             Console.ReadLine();
             cts.Cancel();
+        }
+
+        private static async Task ConfigureBotCommandAsync(ITelegramBotClient botClient)
+        {
+            var command = new List<BotCommand>
+            {
+                new BotCommand { Command = "start", Description = "Hello message with register in MySQL database"},
+                new BotCommand { Command = "menu", Description = "Bot menu with main commands"},
+                new BotCommand { Command = "contact_me", Description = "Contact with bot's creator"},
+            };
+
+            await botClient.SetMyCommands(command);
+
+            Console.WriteLine("[Configuration] Menu's button succesfuly updated");
         }
     }
 }

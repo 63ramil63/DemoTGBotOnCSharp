@@ -1,5 +1,8 @@
-﻿using DemoTGBotOnCSharp.Handler.SubHandler;
+﻿using DemoTGBotOnCSharp.FileStorage;
+using DemoTGBotOnCSharp.FileStorage.Exception;
+using DemoTGBotOnCSharp.Handler.SubHandler;
 using DemoTGBotOnCSharp.Handler.SubHandler.Interface;
+using DemoTGBotOnCSharp.MarkupBuilder;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -13,52 +16,123 @@ namespace DemoTGBotOnCSharp.Handler
 
         public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
+            if (update == null) return;
+
+            Console.WriteLine($"Получен update, callbackQuery = {(update.CallbackQuery != null ? update.CallbackQuery.Data : null)}, document = {update.Message?.Document != null}, text = {update.Message?.Text ?? "[Нет текста]"}");
+            if (update.CallbackQuery != null)
+            {
+                await HandleCallbackQuery(botClient, update, cancellationToken);
+            }
+            else if (update.Message?.Document != null)
+            {
+                await HandleDocumentMessage(botClient, update, cancellationToken);
+            }
+            else if (update.Message?.Text != null)
+            {
+                await HandleTextMessage(botClient, update, cancellationToken);
+            }
+        }
+
+        private static async Task HandleCallbackQuery(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
             try
             {
-                if (update == null) return;
+                await callbackQueryHandler.HandleAsync(botClient, update, cancellationToken);
+            }
+            catch (NullUpdateException e)
+            {
+                Console.WriteLine($"NullUpdateException : {e.Message}");
+            }
+            catch (FileExistsException e)
+            {
+                Console.WriteLine($"File is not exists : {e.Message}");
 
-                Console.WriteLine($"Получен update, callbackQuery = {(update.CallbackQuery != null ? update.CallbackQuery.Data : null)}, document = {update.Message?.Document != null}, text = {update.Message?.Text ?? "[Нет текста]"}");
-                try
-                {
-                    if (update.CallbackQuery != null)
-                    {
-                        await callbackQueryHandler.HandleAsync(botClient, update, cancellationToken);
-                    }
-                    else if (update.Message?.Document != null)
-                    {
-                        await documentHandler.HandleAsync(botClient, update, cancellationToken);
-                    }
-                    else if (update.Message?.Text != null)
-                    {
-                        await textHandler.HandleAsync(botClient, update, cancellationToken);
-                    }
-                }
-                catch (InvalidOperationException e)
-                {
-                    Console.WriteLine($"{e.Message}");
-                    await HandleError(update.Message.Chat.Id, botClient, cancellationToken, e.Message);
-                }
+                string m_text = "File not found(\nPlease send new file";
 
+                await botClient.EditMessageText(
+                    chatId: update!.Message!.Chat.Id,
+                    messageId: update!.Message!.MessageId,
+                    text: m_text,
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back", "/menu"),
+                    cancellationToken: cancellationToken
+                );
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Ошибка при обработке update: {e.Message}");
+                Console.WriteLine($"Exception, message is : {e.Message}");
+                await botClient.SendMessage(
+                    chatId: update!.CallbackQuery!.Message!.Chat.Id,
+                    text: $"An error occurred: {e.Message}\nTry again",
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    cancellationToken: cancellationToken
+                );
+            }
+        }
+        private static async Task HandleDocumentMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await documentHandler.HandleAsync(botClient, update, cancellationToken);
+            }
+            catch (NullUpdateException e)
+            {
+                Console.WriteLine($"NullUpdateException : {e.Message}");
+            }
+            catch (FileExistsException e)
+            {
+                Console.WriteLine($"File Exists exception, message is : {e.Message}");
+
+                string m_text = "File with this name already exist. Please try another file or rename it";
+
+                await botClient.SendMessage(
+                    chatId: update!.Message!.Chat.Id,
+                    text: m_text,
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back", "/menu"),
+                    cancellationToken: cancellationToken
+                );
+            }
+            catch (FileExtensionException e)
+            {
+                Console.WriteLine($"File extension is not allowed : {e.Message}");
+
+                string m_text = $"File extension is not allowed, please send file with these extensions: {string.Join(",", FileController.Instance.AllowedExtension)}";
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception, message is : {e.Message}");
+                await botClient.SendMessage(
+                    chatId: update!.Message!.Chat.Id,
+                    text: $"An error occurred.\nTry again!",
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    cancellationToken: cancellationToken
+                );
             }
         }
 
-        private static async Task HandleError(long chatId, ITelegramBotClient botClient, CancellationToken cts, string errorMessage)
+        private static async Task HandleTextMessage(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
-            string m_text = "Произошла ошибка, повторите попытку и напишите '/menu'\n" + errorMessage;
-            await botClient.SendMessage(
-                chatId: chatId,
-                text: m_text,
-                cancellationToken: cts
+            try
+            {
+                await textHandler.HandleAsync(botClient, update, cancellationToken);
+            }
+            catch (NullUpdateException e)
+            {
+                Console.WriteLine($"NullUpdateException : {e.Message}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception, message is : {e.Message}");
+                await botClient.SendMessage(
+                    chatId: update!.Message!.Chat.Id,
+                    text: "An error occurred: {e.Message}\nTry again",
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    cancellationToken: cancellationToken
                 );
-            return;
+            }
         }
         public static Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
-            Console.WriteLine($"Ошибка Long Polling : {exception.Message}");
+            Console.WriteLine($"Error: {exception.Message}");
             return Task.CompletedTask;
         }
     }

@@ -1,4 +1,5 @@
-﻿using DemoTGBotOnCSharp.FileStorage.Interface;
+﻿using DemoTGBotOnCSharp.FileStorage.Exception;
+using DemoTGBotOnCSharp.FileStorage.Interface;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -10,6 +11,7 @@ namespace DemoTGBotOnCSharp.FileStorage
             new Lazy<FileController>(() => new FileController());
         public static FileController Instance => _instance.Value;
         private readonly string baseStoragePath;
+        public List<string> AllowedExtension => allowedExtensions;
         private List<string> allowedExtensions;
 
         private FileController()
@@ -39,7 +41,7 @@ namespace DemoTGBotOnCSharp.FileStorage
 
             if (!allowedExtensions.Contains(fileExtension))
             {
-                throw new ArgumentException($"Extension '.{fileExtension}' not allowed.");
+                throw new FileExtensionException($"Extension '.{fileExtension}' not allowed.");
             }
 
             string userFolder = Path.Combine(baseStoragePath, chatId.ToString());
@@ -52,14 +54,14 @@ namespace DemoTGBotOnCSharp.FileStorage
             string finalFilePath = Path.Combine(userFolder, safeFileName);
             if (File.Exists(finalFilePath))
             {
-                throw new InvalidOperationException($"File with name - {safeFileName} already exists in path - {userFolder}");
+                throw new FileExistsException($"File with name - {safeFileName} already exists.");
             }
 
             var fileInfo = await botClient.GetFile(document.FileId);
 
             if (string.IsNullOrEmpty(fileInfo.FilePath))
             {
-                throw new InvalidOperationException("Failed to get file download path from Telegram API.");
+                throw new TelegramAPIFileDownloadException("Failed to get file download path from Telegram API.");
             }
 
             // Открываем асинхронный поток записи на диск
@@ -93,7 +95,7 @@ namespace DemoTGBotOnCSharp.FileStorage
         {
             string filePath = Path.Combine(baseStoragePath, chatId.ToString(), fileName);
 
-            if (!File.Exists(filePath)) throw new InvalidOperationException("File not found");
+            if (!File.Exists(filePath)) throw new FileExistsException("File not found");
 
             return new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync: true);
         }

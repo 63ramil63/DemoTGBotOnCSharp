@@ -1,9 +1,9 @@
 ﻿using DemoTGBotOnCSharp.Handler.SubHandler.Interface;
+using DemoTGBotOnCSharp.MarkupBuilder;
 using DemoTGBotOnCSharp.Repositories;
 using DemoTGBotOnCSharp.Repositories.DTO;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {
@@ -12,13 +12,13 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
         public async Task HandleAsync(ITelegramBotClient botClient, Update update, CancellationToken cts)
         {
             var message = update.Message;
-            if (message == null) throw new InvalidOperationException("Message равен null");
+            if (message == null) throw new NullUpdateException("Message is null");
 
             long chatId = message.Chat.Id;
-            if (chatId == 0) throw new InvalidOperationException("ChatId равен 0");
+            if (chatId == 0) throw new NullUpdateException("ChatId equals 0");
 
             string? text = message!.Text;
-            if (text == null) throw new InvalidOperationException("Text равен null");
+            if (text == null) throw new NullUpdateException("Text is null");
 
             switch (text)
             {
@@ -33,12 +33,12 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                             await UserRepository.Instance.AddNewUser(chatId, f_name, l_name, username);
                         }
 
-                        string m_text = "Добро пожаловать в демонстрационного бота!";
+                        string m_text = "Welcome to demonstration bot!";
 
                         await botClient.SendMessage(
                             chatId: chatId,
                             text: m_text,
-                            replyMarkup: GetStartMarkup(),
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Menu", "/menu"),
                             cancellationToken: cts
                         );
                         return;
@@ -48,22 +48,22 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         string? word = await UserRepository.Instance.GetUserWordById(chatId);
                         if (string.IsNullOrEmpty(word))
                         {
-                            string m_text = "Вы еще не сохраняли свое слово! Напишите '/word ваше_слово'";
+                            string m_text = "You haven't saved your word yet! Write '/word your_word'";
                             await botClient.SendMessage(
                                 chatId: chatId,
                                 text: m_text,
-                                replyMarkup: GetmarkupWithBackButton(),
+                                replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
                                 cancellationToken: cts
                             );
                             return;
                         }
                         else
                         {
-                            string m_text = "Ваше слово: " + word;
+                            string m_text = "Your word: " + word;
                             await botClient.SendMessage(
                                 chatId: chatId,
                                 text: m_text,
-                                replyMarkup: GetThirdButtonMarkup(),
+                                replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
                                 cancellationToken: cts
                             );
                             return;
@@ -74,14 +74,14 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         var fileRepository = FileRepository.Instance;
                         if (fileRepository == null)
                         {
-                            throw new InvalidOperationException("File Repository равен Null");
+                            throw new ComponentInitializeException("File Repository is Null");
                         }
                         List<string> userFiles = await fileRepository!.GetFilesByUserId(chatId);
                         if (userFiles.Count == 0)
                         {
                             await botClient.SendMessage(
                                 chatId: chatId,
-                                text: "Вы еще не отправляли файлы боту",
+                                text: "You haven't sent any files to the bot yet.",
                                 cancellationToken: cts
                             );
                         }
@@ -89,8 +89,8 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         {
                             await botClient.SendMessage(
                                 chatId: chatId,
-                                text: "Выберите любой файл",
-                                replyMarkup: CreateMarkupFromListForFiles(userFiles),
+                                text: "Select file",
+                                replyMarkup: InlineMarkupBuilder.GetMarkupFromListWithSuffix(userFiles, "_File", 1),
                                 cancellationToken: cts
                                 );
                         }
@@ -103,11 +103,12 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                 string f_text = text.Replace("/word", "").Trim();
                 if (string.IsNullOrEmpty(f_text))
                 {
-                    string m_text = "Неправильный формат команды, пример: '/word ваше_слово'";
+                    string m_text = "Invalid format, example: '/word ваше_слово'";
+
                     await botClient.SendMessage(
                         chatId: chatId,
                         text: m_text,
-                        replyMarkup: GetmarkupWithBackButton(),
+                        replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
                         cancellationToken: cts
                     );
                     return;
@@ -115,53 +116,17 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                 else
                 {
                     await UserRepository.Instance.SetUserWord(chatId, f_text);
-                    string m_text = "Ваше слово сохранено, узнать его можно написав сообщение /get_word";
+                    string m_text = "Your word has been saved; you can retrieve it by sending the message /get_word.";
+
                     await botClient.SendMessage(
                         chatId: chatId,
                         text: m_text,
-                        replyMarkup: GetThirdButtonMarkup(),
+                        replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
                         cancellationToken: cts
                     );
                     return;
                 }
             }
-        }
-
-        private InlineKeyboardMarkup CreateMarkupFromListForFiles(List<string> files)
-        {
-            var markup = new InlineKeyboardMarkup();
-            foreach (string file in files)
-            {
-                var btn = InlineKeyboardButton.WithCallbackData(file, file + "_File");
-                markup.AddNewRow(new[] { btn });
-            }
-            return markup;
-        }
-
-        private InlineKeyboardMarkup GetStartMarkup()
-        {
-            var markup = new InlineKeyboardMarkup(new[]
-            {
-                InlineKeyboardButton.WithCallbackData(text: "Что умеет этот бот?", callbackData: "StartButton")
-            });
-            return markup;
-        }
-
-        private InlineKeyboardMarkup GetThirdButtonMarkup()
-        {
-            var markup = new InlineKeyboardMarkup(new[]
-            {
-                InlineKeyboardButton.WithCallbackData(text: "Что еще умеет этот бот?", callbackData: "ThirdButton")
-            });
-            return markup;
-        }
-
-        private InlineKeyboardMarkup GetmarkupWithBackButton()
-        {
-            return new InlineKeyboardMarkup(new[]
-            {
-                InlineKeyboardButton.WithCallbackData("Назад", "StartButton")
-            });
         }
     }
 }

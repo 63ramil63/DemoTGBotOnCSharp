@@ -1,8 +1,10 @@
 ﻿using DemoTGBotOnCSharp.FileStorage;
 using DemoTGBotOnCSharp.Handler.SubHandler.Interface;
+using DemoTGBotOnCSharp.MarkupBuilder;
+using DemoTGBotOnCSharp.Repositories;
+using DemoTGBotOnCSharp.Repositories.DTO;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {
@@ -12,60 +14,159 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
         {
             // Достаем объект callback-запроса
             var callbackQuery = update?.CallbackQuery;
-            if (callbackQuery == null) throw new InvalidOperationException("CallbackQuery не получено");
+            if (callbackQuery == null) throw new NullUpdateException("CallbackQuery не получено");
 
             var message = callbackQuery.Message;
-            if (message == null) throw new InvalidOperationException("Message из callbackQuery = null");
+            if (message == null) throw new NullUpdateException("Message из callbackQuery = null");
 
             long chatId = callbackQuery.Message!.Chat.Id;
-            if (chatId == 0) throw new InvalidOperationException("ChatId равен 0");
+            if (chatId == 0) throw new NullUpdateException("ChatId равен 0");
 
             // Получаем callbackdata
             string? buttonData = callbackQuery.Data;
 
             switch (buttonData)
             {
-                case "StartButton":
+                case "/menu":
                     {
-                        int messageId = callbackQuery.Message!.Id;
-                        string m_text = "Бот умеет создавать много кнопок";
+                        int messageId = message.Id;
+                        string m_text = "Select option from a list";
 
                         await botClient.EditMessageText(
                             chatId: chatId,
                             messageId: messageId,
                             text: m_text,
-                            replyMarkup: GetMarkupWithLotOfButtons(),
+                            replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
                             cancellationToken: cts
                         );
-
                         return;
                     }
-                case "SecondButton":
+                case "/about_bot":
                     {
-                        int messageId = callbackQuery.Message!.Id;
-                        string m_text = "Бот работает с БД MySQL. Он уже запомнил ваше имя, фамилия, юзернейм\n" +
-                            "Также бот запоминает кодовое слово которое вы напишите '/word ваше слово'";
+                        int messageId = message.Id;
+                        string m_text = "This bot was created to demonstrate the basic capabilities of the Telegram Bot API.\n" +
+                            "It operates in conjunction with a MySQL database, where all user data is stored. Additionally, the bot interacts with the server's file system, enabling it to save and send files submitted by users.";
+
                         await botClient.EditMessageText(
                             chatId: chatId,
                             messageId: messageId,
                             text: m_text,
-                            replyMarkup: GetmarkupWithBackButton(),
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Read more", "/read_more_about_bot"),
                             cancellationToken: cts
                         );
-
                         return;
                     }
-                case "ThirdButton":
+                case "/read_more_about_bot":
                     {
-                        int messageId = callbackQuery.Message!.Id;
-                        string m_text = "Бот может сохранять ваши файлы, которые вы ему отправите";
+                        int messageId = message.Id;
+                        string m_text = "Todo";
+
                         await botClient.EditMessageText(
                             chatId: chatId,
                             messageId: messageId,
                             text: m_text,
-                            replyMarkup: GetmarkupWithBackButton(),
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
                             cancellationToken: cts
-                            );
+                        );
+                        return;
+                    }
+                case "/show_user_data":
+                    {
+                        int messageId = message.Id;
+
+                        var userRepository = UserRepository.Instance;
+                        if (userRepository == null) throw new ComponentInitializeException("User repository is null");
+
+                        UserDTO? user = await userRepository.GetUserById(chatId);
+                        string? f_name = "no data";
+                        string? l_name = "no data";
+                        string? username = "no data";
+                        string? word = "no data";
+                        // Add a user if there is no data in the database.
+                        if (user != null)
+                        {
+                            if (!string.IsNullOrEmpty(user.f_name)) f_name = user.f_name;
+                            if (!string.IsNullOrEmpty(user.l_name)) l_name = user.f_name;
+                            if (!string.IsNullOrEmpty(user.username)) username = user.f_name;
+                            if (!string.IsNullOrEmpty(user.word)) word = user.word;
+                        } 
+                        else
+                        {
+                            f_name = message.Chat.FirstName;
+                            l_name = message.Chat.LastName;
+                            username = message.Chat.Username;
+
+                            await userRepository.AddNewUser(chatId, f_name, l_name, username);
+                        }
+
+                        string m_text = $"First name - {f_name}\nLast name - {l_name}\nUsername - {username}\nSecret word - {word}";
+
+                        await botClient.EditMessageText(
+                            chatId: chatId,
+                            messageId: messageId,
+                            text: m_text,
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("More about data stored in the DB", "/about_data_stored_in_db"),
+                            cancellationToken: cts
+                        );
+                        return;
+                    }
+                case "/about_data_stored_in_db":
+                    {
+                        int messageId = message.Id;
+
+                        string m_text = "The bot stores user data in the `Users` table. This table contains the chat ID, first name, last name, username, a secret word, and the `isAdmin` boolean variable. " +
+                            "Only the `chatId` field is mandatory for sending messages; the other fields allow the bot, among other things, to address the user by name.";
+
+                        await botClient.EditMessageText(
+                            chatId: chatId,
+                            messageId: messageId,
+                            text: m_text,
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                            cancellationToken: cts
+                        );
+                        return;
+                    }
+                case "/get_word":
+                    {
+                        int messageId = message.Id;
+
+                        var userRepository = UserRepository.Instance;
+                        if (userRepository == null) throw new ComponentInitializeException("User repository is null");
+
+                        string m_text;
+
+                        string? word = await userRepository.GetUserWordById(chatId);
+                        if (string.IsNullOrEmpty(word))
+                        {
+                            m_text = "You haven't saved your secret word yet. Write /word 'your_word'";
+                        }
+                        else
+                        {
+                            m_text = $"Your secret word - {word}";
+                        }
+
+                        await botClient.EditMessageText(
+                            chatId: chatId,
+                            messageId: messageId,
+                            text: m_text,
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                            cancellationToken: cts
+                        );
+                        return;
+                    }
+                case "/contact":
+                    {
+                        int messageId = message.Id;
+
+                        string m_text = "If you are interested in anything or would like to ask a question, feel free to write.\n@wrotoftanks63";
+
+                        await botClient.EditMessageText(
+                            chatId: chatId,
+                            messageId: messageId,
+                            text: m_text,
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                            cancellationToken: cts
+                        );
                         return;
                     }
             }
@@ -73,93 +174,25 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
             if (buttonData!.EndsWith("_File"))
             {
                 string fileName = buttonData.Replace("_File", "");
-                try
+                using (FileStream fs = await FileController.Instance.GetFile(fileName, chatId))
                 {
-                    using (FileStream fs = await FileController.Instance.GetFile(fileName, chatId))
-                    {
-                        var inputFile = InputFile.FromStream(fs, fileName);
+                    var inputFile = InputFile.FromStream(fs, fileName);
 
-                        await botClient.SendDocument(
-                            chatId: chatId,
-                            document: inputFile,
-                            caption: $"Вот ваш файл"
-                        );
+                    await botClient.SendDocument(
+                        chatId: chatId,
+                        document: inputFile,
+                        caption: $"Here your file!"
+                    );
 
-                        await botClient.SendMessage(
-                            chatId: chatId,
-                            text: "Это самые базовые вещи которые умеет бот.\n" +
-                            "Бот в тг это универсальное и удобное средство коммуникации с людьми, которое автоматизирует любые задачи. " +
-                            "Боты бывают разные и я уверен, что смогу написать бота любой сложности\n" +
-                            "если хотите уточнить что либо или узнать, можете написать мне\n" +
-                            "@wrotoftanks63"
-                        );
-                    }
-                }
-                catch (FileNotFoundException ex)
-                {
-                    // Обработка ситуации, если файл не найден в БД или на диске
                     await botClient.SendMessage(
                         chatId: chatId,
-                        text: $"К сожалению, файл '{fileName}' не найден."
+                        text: "Select options from a list",
+                        replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                        cancellationToken: cts
                     );
                 }
-                catch (Exception ex)
-                {
-                    // Обработка остальных непредвиденных ошибок
-                    await botClient.SendMessage(
-                        chatId: chatId,
-                        text: "Произошла ошибка при отправке файла."
-                    );
-                }
+                return;
             }
-
-            //await botClient.AnswerCallbackQuery(
-            //    callbackQueryId: callbackQuery.Id,
-            //    cancellationToken: cts
-            //);
         }
-
-        private InlineKeyboardMarkup GetMarkupWithLotOfButtons()
-        {
-            var markup = new InlineKeyboardMarkup(new[]
-            {
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(text: "1", callbackData:"none")
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(text: "2", callbackData: "none"),
-                    InlineKeyboardButton.WithCallbackData(text: "3", callbackData: "none")
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(text: "4", callbackData: "none"),
-                    InlineKeyboardButton.WithCallbackData(text: "5", callbackData: "none"),
-                    InlineKeyboardButton.WithCallbackData(text: "6", callbackData: "none")
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(text: "7", callbackData: "none"),
-                    InlineKeyboardButton.WithCallbackData(text: "8", callbackData: "none"),
-                    InlineKeyboardButton.WithCallbackData(text: "9", callbackData: "none"),
-                    InlineKeyboardButton.WithCallbackData(text: "10", callbackData: "none"),
-                },
-                new[]
-                {
-                    InlineKeyboardButton.WithCallbackData(text: "Что еще может бот?", callbackData: "SecondButton")
-                }
-            });
-            return markup;
-        }
-
-        private InlineKeyboardMarkup GetmarkupWithBackButton()
-        {
-            return new InlineKeyboardMarkup(new[]
-            {
-                InlineKeyboardButton.WithCallbackData("Назад", "StartButton")
-            });
-        }
-
     }
 }
