@@ -6,6 +6,7 @@ namespace DemoTGBotOnCSharp.Repositories
 {
     internal class UserRepository : IUserRepository
     {
+        // Потокобезопасное создание singleton при помощи Lazy
         private static readonly Lazy<UserRepository> _instance =
             new Lazy<UserRepository>(() => new UserRepository());
 
@@ -41,7 +42,7 @@ namespace DemoTGBotOnCSharp.Repositories
                 int wordOrdinal = reader.GetOrdinal("Word");
                 int isAdminOrdinal = reader.GetOrdinal("IsAdmin");
 
-                return new UserDTO
+                var userDTO = new UserDTO
                 {
                     chatId = chatId.Value,
                     f_name = reader.IsDBNull(firstNameOrdinal) ? null : reader.GetString(firstNameOrdinal),
@@ -50,6 +51,10 @@ namespace DemoTGBotOnCSharp.Repositories
                     isAdmin = reader.GetBoolean(isAdminOrdinal),
                     word = reader.IsDBNull(wordOrdinal) ? null : reader.GetString(wordOrdinal)
                 };
+
+                await connection.CloseAsync();
+
+                return userDTO;
             }
             return null; // Возврат null если так и не нашли пользователя с указанным Id
         }

@@ -5,6 +5,7 @@ namespace DemoTGBotOnCSharp.Repositories
 {
     internal class FileRepository : IFileRepository
     {
+        // Потокобезопасное создание singleton при помощи Lazy
         private static readonly Lazy<FileRepository> _instance =
             new Lazy<FileRepository>(() => new FileRepository());
 

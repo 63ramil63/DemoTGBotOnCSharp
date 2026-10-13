@@ -17,19 +17,12 @@ namespace DemoTGBotOnCSharp.Database
         {
             using var connection = new MySqlConnection(connectionString);
 
-            await CreateUserDatabes(connection);
-            await CreateFilesDatabase(connection);
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
 
-            Console.WriteLine("[БД] Подключение установлено. Таблица Users и Files проверены/созданы");
-        }
-
-        private async Task CreateUserDatabes(MySqlConnection connection)
-        {
-            // Открываем соединение асинхронно
-            await connection.OpenAsync();
-
-            // SQL-запрос
-            string createTableSql = @"
+            string createUsersTable = @"
                 CREATE TABLE IF NOT EXISTS Users (
                     ChatId BIGINT PRIMARY KEY,
                     FirstName VARCHAR(255),
@@ -37,23 +30,36 @@ namespace DemoTGBotOnCSharp.Database
                     UserName VARCHAR(255),
                     IsAdmin BOOLEAN DEFAULT FALSE,
                     Word VARCHAR(255)
-                    );";
+                );";
 
-            using var command = new MySqlCommand(createTableSql, connection);
+            await CreateTable(connection, createUsersTable);
 
-            // Выполняем команду без возвращения строк
-            await command.ExecuteNonQueryAsync();
-        }
-
-        private async Task CreateFilesDatabase(MySqlConnection connection)
-        {
             string createFileRepositoryTable = @"
                 CREATE TABLE IF NOT EXISTS Files(
-                    ChatId BIGINT PRIMARY KEY,
+                    ChatId BIGINT,
                     FilePath VARCHAR(255)
-                    )";
+                );";
 
-            using var command = new MySqlCommand(createFileRepositoryTable, connection);
+            await CreateTable(connection, createFileRepositoryTable);
+
+            string createGameScoreTable = @"
+                CREATE TABLE IF NOT EXISTS UserScore(
+                    ChatId BIGINT PRIMARY KEY,
+                    Score INT DEFAULT 0,
+                    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                );";
+
+            await CreateTable(connection, createGameScoreTable);
+
+
+            await connection.CloseAsync();
+
+            Console.WriteLine("[БД] Подключение установлено. Таблица Users и Files проверены/созданы");
+        }
+
+        private async Task CreateTable(MySqlConnection connection, string sqlQuery)
+        {
+            using var command = new MySqlCommand(sqlQuery, connection);
 
             await command.ExecuteNonQueryAsync();
         }

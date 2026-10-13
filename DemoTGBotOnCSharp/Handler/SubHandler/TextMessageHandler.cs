@@ -2,6 +2,7 @@
 using DemoTGBotOnCSharp.MarkupBuilder;
 using DemoTGBotOnCSharp.Repositories;
 using DemoTGBotOnCSharp.Repositories.DTO;
+using DemoTGBotOnCSharp.Handler.Exceptions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -94,6 +95,31 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                                 cancellationToken: cts
                                 );
                         }
+                        return;
+                    }
+                case "/contact":
+                    {
+                        int messageId = message.Id;
+
+                        string m_text = "If you are interested in anything or would like to ask a question, feel free to write.\n@wrotoftanks63";
+
+                        await botClient.EditMessageText(
+                            chatId: chatId,
+                            messageId: messageId,
+                            text: m_text,
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                            cancellationToken: cts
+                        );
+                        return;
+                    }
+                case "/game":
+                    {
+                        await botClient.SendMessage(
+                            chatId: chatId,
+                            text: "Press the button to play mini game!",
+                            replyMarkup: InlineMarkupBuilder.GetGameStartMarkup(),
+                            cancellationToken: cts
+                        );
                         return;
                     }
             }

@@ -1,5 +1,6 @@
 ﻿using DemoTGBotOnCSharp.FileStorage;
 using DemoTGBotOnCSharp.FileStorage.Exception;
+using DemoTGBotOnCSharp.Handler.Exceptions;
 using DemoTGBotOnCSharp.Handler.SubHandler;
 using DemoTGBotOnCSharp.Handler.SubHandler.Interface;
 using DemoTGBotOnCSharp.MarkupBuilder;
@@ -50,8 +51,8 @@ namespace DemoTGBotOnCSharp.Handler
                 string m_text = "File not found(\nPlease send new file";
 
                 await botClient.EditMessageText(
-                    chatId: update!.Message!.Chat.Id,
-                    messageId: update!.Message!.MessageId,
+                    chatId: update!.CallbackQuery!.Message!.Chat.Id,
+                    messageId: update!.CallbackQuery!.Message!.MessageId,
                     text: m_text,
                     replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back", "/menu"),
                     cancellationToken: cancellationToken
@@ -87,7 +88,7 @@ namespace DemoTGBotOnCSharp.Handler
                 await botClient.SendMessage(
                     chatId: update!.Message!.Chat.Id,
                     text: m_text,
-                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back", "/menu"),
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
                     cancellationToken: cancellationToken
                 );
             }
@@ -96,6 +97,13 @@ namespace DemoTGBotOnCSharp.Handler
                 Console.WriteLine($"File extension is not allowed : {e.Message}");
 
                 string m_text = $"File extension is not allowed, please send file with these extensions: {string.Join(",", FileController.Instance.AllowedExtension)}";
+
+                await botClient.SendMessage(
+                    chatId: update!.Message!.Chat.Id,
+                    text: m_text,
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                    cancellationToken: cancellationToken
+                );
             }
             catch (Exception e)
             {

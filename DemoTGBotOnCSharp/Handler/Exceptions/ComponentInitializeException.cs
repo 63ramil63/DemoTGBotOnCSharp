@@ -1,4 +1,4 @@
-﻿namespace DemoTGBotOnCSharp.Handler
+﻿namespace DemoTGBotOnCSharp.Handler.Exceptions
 {
     internal class ComponentInitializeException : Exception
     {

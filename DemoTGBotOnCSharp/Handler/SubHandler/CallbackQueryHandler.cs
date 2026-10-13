@@ -3,8 +3,10 @@ using DemoTGBotOnCSharp.Handler.SubHandler.Interface;
 using DemoTGBotOnCSharp.MarkupBuilder;
 using DemoTGBotOnCSharp.Repositories;
 using DemoTGBotOnCSharp.Repositories.DTO;
+using DemoTGBotOnCSharp.Handler.Exceptions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {
@@ -14,13 +16,13 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
         {
             // Достаем объект callback-запроса
             var callbackQuery = update?.CallbackQuery;
-            if (callbackQuery == null) throw new NullUpdateException("CallbackQuery не получено");
+            if (callbackQuery == null) throw new NullUpdateException("CallbackQuery not received");
 
             var message = callbackQuery.Message;
-            if (message == null) throw new NullUpdateException("Message из callbackQuery = null");
+            if (message == null) throw new NullUpdateException("Message from callbackQuery is null");
 
             long chatId = callbackQuery.Message!.Chat.Id;
-            if (chatId == 0) throw new NullUpdateException("ChatId равен 0");
+            if (chatId == 0) throw new NullUpdateException("ChatId is 0");
 
             // Получаем callbackdata
             string? buttonData = callbackQuery.Data;
@@ -86,8 +88,8 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         if (user != null)
                         {
                             if (!string.IsNullOrEmpty(user.f_name)) f_name = user.f_name;
-                            if (!string.IsNullOrEmpty(user.l_name)) l_name = user.f_name;
-                            if (!string.IsNullOrEmpty(user.username)) username = user.f_name;
+                            if (!string.IsNullOrEmpty(user.l_name)) l_name = user.l_name;
+                            if (!string.IsNullOrEmpty(user.username)) username = user.username;
                             if (!string.IsNullOrEmpty(user.word)) word = user.word;
                         } 
                         else
@@ -169,6 +171,49 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         );
                         return;
                     }
+                case "/game":
+                    {
+                        int messageId = message.Id;
+
+                        await botClient.EditMessageText(
+                            chatId: chatId,
+                            messageId: messageId,
+                            text: "Press the button to play mini game!",
+                            replyMarkup: InlineMarkupBuilder.GetGameStartMarkup(),
+                            cancellationToken: cts
+                        );
+                        return;
+                    }
+                case "/files":
+                    {
+                        var fileRepository = FileRepository.Instance;
+                        if (fileRepository == null) throw new ComponentInitializeException("File repository is null");
+
+                        int messageId = message.Id;
+
+                        List<string> files = await fileRepository.GetFilesByUserId(chatId);
+
+                        string m_text;
+
+                        if (files.Count > 0)
+                        {
+                            m_text = "Select file from a list";
+                        } 
+                        else
+                        {
+                            m_text = "You haven't sent any files to the boto yet!";
+                        }
+
+                        await botClient.EditMessageText(
+                            chatId: chatId,
+                            messageId: messageId,
+                            text: m_text,
+                            replyMarkup: InlineMarkupBuilder.GetMarkupFromListWithSuffix(files, "_File", 1),
+                            cancellationToken: cts
+                        );
+
+                        return;
+                    }
             }
 
             if (buttonData!.EndsWith("_File"))
@@ -181,7 +226,8 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                     await botClient.SendDocument(
                         chatId: chatId,
                         document: inputFile,
-                        caption: $"Here your file!"
+                        caption: $"Here your file!",
+                        cancellationToken: cts
                     );
 
                     await botClient.SendMessage(

@@ -1,4 +1,5 @@
-﻿using DemoTGBotOnCSharp.Handler;
+﻿using DemoTGBotOnCSharp.Database;
+using DemoTGBotOnCSharp.Handler;
 using DotNetEnv;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
@@ -31,6 +32,9 @@ namespace DemoTGBotOnCSharp
                 Console.WriteLine($"Error reading the file by DotNetEnv: {e.Message}");
                 return;
             }
+
+            var databaseCreator = new DatabaseCreator();
+            await databaseCreator.CreateDatabaseAsync();
 
             string botToken = Environment.GetEnvironmentVariable("TG_BOT_TOKEN");
 
@@ -77,7 +81,7 @@ namespace DemoTGBotOnCSharp
             {
                 new BotCommand { Command = "start", Description = "Hello message with register in MySQL database"},
                 new BotCommand { Command = "menu", Description = "Bot menu with main commands"},
-                new BotCommand { Command = "contact_me", Description = "Contact with bot's creator"},
+                new BotCommand { Command = "contact", Description = "Contact with bot's creator"},
             };
 
             await botClient.SetMyCommands(command);

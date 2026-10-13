@@ -30,14 +30,15 @@ namespace DemoTGBotOnCSharp.FileStorage
                     .ToList();
             }
         }
-        public async Task<string> SaveTelegramFileAsync(ITelegramBotClient botClient, Document document, long chatId)
+        public async Task<string> SaveTelegramFileAsync(ITelegramBotClient botClient, Document document, long chatId, string? caption = null)
         {
             if (string.IsNullOrEmpty(document.FileName))
             {
                 throw new InvalidOperationException("File has no name, unable to get its extension.");
             }
 
-            string fileExtension = Path.GetExtension(document.FileName).TrimStart('.').ToLower();
+            string fileExtensionWithDot = Path.GetExtension(document.FileName);
+            string fileExtension = fileExtensionWithDot.TrimStart('.').ToLower();
 
             if (!allowedExtensions.Contains(fileExtension))
             {
@@ -50,8 +51,18 @@ namespace DemoTGBotOnCSharp.FileStorage
                 Directory.CreateDirectory(userFolder);
             }
 
-            string safeFileName = document.FileName;
+            string safeFileName;
+            if (string.IsNullOrEmpty(caption))
+            {
+                safeFileName = document.FileName;
+            } 
+            else
+            {
+                safeFileName = MakeSafeFileName(caption) + fileExtensionWithDot;
+            }
+
             string finalFilePath = Path.Combine(userFolder, safeFileName);
+
             if (File.Exists(finalFilePath))
             {
                 throw new FileExistsException($"File with name - {safeFileName} already exists.");
@@ -72,6 +83,16 @@ namespace DemoTGBotOnCSharp.FileStorage
             }
 
             return safeFileName; // Возвращаем путь чтобы записать его в БД
+        }
+
+        // Метод для очистки имени файла от запрещенных ОС символов
+        private string MakeSafeFileName(string filename)
+        {
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                filename = filename.Replace(c, '_');
+            }
+            return filename;
         }
 
         public async Task RemoveFileFromDirectory(string fileName, long chatId)
