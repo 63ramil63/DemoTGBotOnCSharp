@@ -38,7 +38,7 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
 
                     string rankText = playerRank.HasValue ? $"{playerRank.Value}" : "Not ranked yet";
 
-                    string m_text = $"🎮 Congratulations, your score is : {result.Score}" +
+                    string m_text = $"🎮 Congratulations, your score is : {result.Score}\n" +
                         $"🏆 Your rank is {rankText}";
 
                     await botClient.SendMessage(

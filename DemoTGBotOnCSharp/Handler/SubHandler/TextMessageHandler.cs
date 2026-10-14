@@ -122,6 +122,16 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         );
                         return;
                     }
+                case "/menu":
+                    {
+                        await botClient.SendMessage(
+                            chatId: chatId,
+                            text: "Select option from a list",
+                            replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                            cancellationToken: cts
+                        );
+                        return;
+                    }
             }
 
             if (text.StartsWith("/word"))

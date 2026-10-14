@@ -6,7 +6,6 @@ using DemoTGBotOnCSharp.Repositories.DTO;
 using DemoTGBotOnCSharp.Handler.Exceptions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {

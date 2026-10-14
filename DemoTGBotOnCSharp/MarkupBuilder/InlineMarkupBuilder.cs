@@ -68,13 +68,10 @@ namespace DemoTGBotOnCSharp.MarkupBuilder
             // 🕹️ Создаем обычную клавиатурную кнопку с Mini App
             var replyMarkup = new ReplyKeyboardMarkup(new[]
             {
-        new[] { KeyboardButton.WithWebApp("Play Flappy Bird 🕹️", new WebAppInfo { Url = gameUrl }) },
-        new[] { new KeyboardButton("Back to menu") } // Обычная текстовая кнопка возврата
-    })
-            {
-                ResizeKeyboard = true, // Делает кнопки аккуратными по размеру текста
-                OneTimeKeyboard = false // Клавиатура не скроется сама после нажатия
-            };
+                new[] { KeyboardButton.WithWebApp("Play Flappy Bird 🕹️", new WebAppInfo { Url = gameUrl }) },
+                new[] { new KeyboardButton("/menu") } // Обычная текстовая кнопка возврата
+            });
+            
 
             return replyMarkup;
         }
