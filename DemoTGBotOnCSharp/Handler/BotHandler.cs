@@ -14,6 +14,7 @@ namespace DemoTGBotOnCSharp.Handler
         private static readonly IUpdateSubHandler textHandler = new TextMessageHandler();
         private static readonly IUpdateSubHandler documentHandler = new DocumentHandler();
         private static readonly IUpdateSubHandler callbackQueryHandler = new CallbackQueryHandler();
+        private static readonly IUpdateSubHandler webAppDataHandler = new WebAppDataHandler();
 
         public static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
@@ -27,6 +28,10 @@ namespace DemoTGBotOnCSharp.Handler
             else if (update.Message?.Document != null)
             {
                 await HandleDocumentMessage(botClient, update, cancellationToken);
+            }
+            else if (update.Message?.WebAppData != null)
+            {
+                await HandleWebAppData(botClient, update, cancellationToken);
             }
             else if (update.Message?.Text != null)
             {
@@ -122,6 +127,28 @@ namespace DemoTGBotOnCSharp.Handler
             try
             {
                 await textHandler.HandleAsync(botClient, update, cancellationToken);
+            }
+            catch (NullUpdateException e)
+            {
+                Console.WriteLine($"NullUpdateException : {e.Message}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Exception, message is : {e.Message}");
+                await botClient.SendMessage(
+                    chatId: update!.Message!.Chat.Id,
+                    text: "An error occurred: {e.Message}\nTry again",
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    cancellationToken: cancellationToken
+                );
+            }
+        }
+
+        private static async Task HandleWebAppData(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await webAppDataHandler.HandleAsync(botClient, update, cancellationToken);
             }
             catch (NullUpdateException e)
             {

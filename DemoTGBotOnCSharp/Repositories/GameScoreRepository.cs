@@ -14,7 +14,11 @@ namespace DemoTGBotOnCSharp.Repositories
         public static GameScoreRepository Instance => _instance.Value;
         private readonly string connectionString;
         private string SELECT_SCORE_BY_ID = "SELECT Score, UpdatedAt FROM UserScore WHERE ChatId = @chatId";
-        private string SAVE_GAME_SCORE = "INSERT INTO UserScore (ChatId, Score) VALUES (@chatId, @score);";
+        private string SAVE_GAME_SCORE = @"
+            INSERT INTO UserScore (ChatId, Score) 
+            VALUES (@chatId, @score) 
+            ON DUPLICATE KEY UPDATE 
+            Score = IF(@score > Score, @score, Score);";
         // @ Позволяет переносить строки без использования + 
         private string GET_PLAYER_RANK = @"
             SELECT player_rank

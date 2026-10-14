@@ -5,6 +5,7 @@ using DemoTGBotOnCSharp.Handler.Exceptions;
 using System.Text.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using System.Text.Json.Serialization;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {
@@ -34,12 +35,16 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                     // Записываем результат напрямую в базу данных
                     await GameScoreRepository.Instance.SaveGameScore(chatId, result.Score);
                     int? playerRank = await GameScoreRepository.Instance.GetPlayerRankAsync(chatId);
+
+                    string rankText = playerRank.HasValue ? $"{playerRank.Value}" : "Not ranked yet";
+
                     string m_text = $"🎮 Congratulations, your score is : {result.Score}" +
-                        $"🏆 Your rank is {playerRank}";
+                        $"🏆 Your rank is {rankText}";
 
                     await botClient.SendMessage(
                         chatId: chatId,
                         text: m_text,
+                        parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown,
                         replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
                         cancellationToken: cts
                     );
@@ -60,6 +65,7 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
 
     public class WebAppGameResult
     {
-        public int Score;
+        [JsonPropertyName("score")]
+        public int Score { get; set; }
     }
 }

@@ -117,7 +117,7 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         await botClient.SendMessage(
                             chatId: chatId,
                             text: "Press the button to play mini game!",
-                            replyMarkup: InlineMarkupBuilder.GetGameStartMarkup(),
+                            replyMarkup: InlineMarkupBuilder.GetGameStartReplyMarkup(),
                             cancellationToken: cts
                         );
                         return;

@@ -173,13 +173,10 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                     }
                 case "/game":
                     {
-                        int messageId = message.Id;
-
-                        await botClient.EditMessageText(
+                        await botClient.SendMessage(
                             chatId: chatId,
-                            messageId: messageId,
                             text: "Press the button to play mini game!",
-                            replyMarkup: InlineMarkupBuilder.GetGameStartMarkup(),
+                            replyMarkup: InlineMarkupBuilder.GetGameStartReplyMarkup(),
                             cancellationToken: cts
                         );
                         return;
