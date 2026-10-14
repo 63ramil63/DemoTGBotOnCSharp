@@ -62,7 +62,9 @@ function sendResultToBot() {
 
     if (tg && tg.sendData && window.Telegram.WebApp.initData) {
         tg.sendData(JSON.stringify(dataToSend));
-        tg.close();
+        setTimeout(() => {
+            tg.close()
+        }, 150);
     } else {
         alert(`[PC Test] Sent best score: ${bestScore} to bot!\nGame window closed.`);
         bestScore = 0;
