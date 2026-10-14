@@ -57,15 +57,23 @@ function handleAction(clickCoords) {
 
 function sendResultToBot() {
     const dataToSend = {
-        score: bestScore, // Отправляем именно МАКСИМАЛЬНЫЙ рекорд сессии
+        score: bestScore
     };
 
-    if (tg && tg.sendData && window.Telegram.WebApp.initData) {
-        tg.sendData(JSON.stringify(dataToSend));
-        setTimeout(() => {
-            tg.close()
-        }, 150);
+    // Проверяем наличие самого объекта tg и метода sendData
+    if (tg && typeof tg.sendData === 'function') {
+        try {
+            tg.sendData(JSON.stringify(dataToSend));
+            
+            // Даем Telegram 150мс на отправку строки, затем закрываем
+            setTimeout(() => {
+                tg.close();
+            }, 150);
+        } catch (error) {
+            alert("Ошибка отправки через Telegram: " + error.message);
+        }
     } else {
+        // Этот блок сработает только на реальном ПК в браузере
         alert(`[PC Test] Sent best score: ${bestScore} to bot!\nGame window closed.`);
         bestScore = 0;
         resetGame();
