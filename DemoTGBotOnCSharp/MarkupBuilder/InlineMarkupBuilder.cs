@@ -11,28 +11,36 @@ namespace DemoTGBotOnCSharp.MarkupBuilder
             
             if (buttonsInRow <= 0) buttonsInRow = 1;
 
+            // Преобразование активного списка в кнопку с суффиксом
             // Converting an active list into a button with a suffix
 
             var allButtons = buttons
                 .Select(btn => InlineKeyboardButton.WithCallbackData(btn, btn + uniqSuffix));
 
-            // Split this list into rows and convert it into a list of lists of buttons.
+            // Преобразование списка в вложенный список [][] с учетом количества кнопок в ряду
+            // Converting a list into a nested list `[][]`, based on the number of buttons per row
             var rows = allButtons.Chunk(buttonsInRow).ToList();
 
             var backButton = InlineKeyboardButton.WithCallbackData("Back to menu", "/menu");
 
-            // Add a "Back" button as a separate (last) row at the end of the keyboard.
+            // Добавление кнопки «Назад» в конец списка
+            // Adding a back button to the end of the list
             rows.Add(new[] { backButton });
 
+            // Возвращение клавиатуры
             // Return ready markup
             return new InlineKeyboardMarkup(rows);
         }
 
+        // Возвращение клавиатуры с одной кнопкой с CallbackData
+        // Returning a single-button keyboard with CallbackData
         public static InlineKeyboardMarkup GetMarkupWithOneButton(string buttonName, string callbackData)
         {
             return new InlineKeyboardMarkup(new[] { InlineKeyboardButton.WithCallbackData(buttonName, callbackData) });
         }
 
+        // Неизменяемая клавиатура для меню
+        // Fixed keyboard for menus
         public static InlineKeyboardMarkup GetMenuMarkup()
         {
             return new InlineKeyboardMarkup(

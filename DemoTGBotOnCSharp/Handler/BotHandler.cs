@@ -11,6 +11,8 @@ namespace DemoTGBotOnCSharp.Handler
 {
     internal class BotHandler
     {
+        // Инициализация обработчиков
+        // Initialization of handlers
         private static readonly IUpdateSubHandler textHandler = new TextMessageHandler();
         private static readonly IUpdateSubHandler documentHandler = new DocumentHandler();
         private static readonly IUpdateSubHandler callbackQueryHandler = new CallbackQueryHandler();
@@ -20,7 +22,7 @@ namespace DemoTGBotOnCSharp.Handler
         {
             if (update == null) return;
 
-            Console.WriteLine($"Получен update, callbackQuery = {(update.CallbackQuery != null ? update.CallbackQuery.Data : null)}, document = {update.Message?.Document != null}, text = {update.Message?.Text ?? "[Нет текста]"}");
+            Console.WriteLine($"Getting update, callbackQuery = {(update.CallbackQuery != null ? update.CallbackQuery.Data : null)}, document = {update.Message?.Document != null}, text = {update.Message?.Text ?? "[Empty text]"}");
             if (update.CallbackQuery != null)
             {
                 await HandleCallbackQuery(botClient, update, cancellationToken);

@@ -7,6 +7,8 @@ namespace DemoTGBotOnCSharp.FileStorage
 {
     internal class FileController : IFileController
     {
+        // Потокобезопасное создание singleton при помощи Lazy
+        // Thread-safe singleton creation using Lazy
         private static readonly Lazy<FileController> _instance =
             new Lazy<FileController>(() => new FileController());
         public static FileController Instance => _instance.Value;
@@ -76,16 +78,21 @@ namespace DemoTGBotOnCSharp.FileStorage
             }
 
             // Открываем асинхронный поток записи на диск
+            // Open asyncchronous stream for writing to disk 
             using (var fileStream = new FileStream(finalFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 4096, useAsync: true))
             {
                 // Скачиваем файл с сервером Telegram нарпямую на пк
+                // Downloading file from Telegram server into PC
                 await botClient.DownloadFile(fileInfo.FilePath, fileStream);
             }
 
-            return safeFileName; // Возвращаем путь чтобы записать его в БД
+            // Возвращаем путь чтобы записать его в БД
+            // Return the file path
+            return safeFileName; 
         }
 
         // Метод для очистки имени файла от запрещенных ОС символов
+        // Method for stripping characters forbidden by the OS from a filename
         private string MakeSafeFileName(string filename)
         {
             foreach (char c in Path.GetInvalidFileNameChars())

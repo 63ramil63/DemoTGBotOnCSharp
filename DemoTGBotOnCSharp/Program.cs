@@ -20,10 +20,11 @@ namespace DemoTGBotOnCSharp
                 path = Console.ReadLine();
             }
 
-            // 2. Загружаем переменные из найденного файла в память приложения
+            // Загружаем переменные из найденного файла в память приложения
+            // Loading variables from the discovered file into the application's memory
             try
             {
-                // 3. Загружаем указанный пользователем файл через DotNetEnv
+                // 3. Loading the user-specified file via DotNetEnv
                 Env.Load(path);
                 Console.WriteLine("Configuration succesfuly loaded from .env file.");
             }
@@ -33,6 +34,8 @@ namespace DemoTGBotOnCSharp
                 return;
             }
 
+            // Создание таблиц в базе данных
+            // Creating tables in a database
             var databaseCreator = new DatabaseCreator();
             await databaseCreator.CreateDatabaseAsync();
 
@@ -46,6 +49,8 @@ namespace DemoTGBotOnCSharp
            
             var botClient = new TelegramBotClient(botToken);
 
+            // Проверка инициализирован ли бот
+            // Check whether the bot has been initialized   
             var me = await botClient.GetMe();
             Console.WriteLine($"Bot {me.Username} started");
             try
@@ -75,6 +80,8 @@ namespace DemoTGBotOnCSharp
             cts.Cancel();
         }
 
+        // Создание команд, которые будут находится слева от поля ввода сообщения
+        // Creating commands that will be positioned to the left of the message input field
         private static async Task ConfigureBotCommandAsync(ITelegramBotClient botClient)
         {
             var command = new List<BotCommand>
@@ -86,7 +93,7 @@ namespace DemoTGBotOnCSharp
 
             await botClient.SetMyCommands(command);
 
-            Console.WriteLine("[Configuration] Menu's button succesfuly updated");
+            Console.WriteLine("Menu's button succesfuly updated");
         }
     }
 }

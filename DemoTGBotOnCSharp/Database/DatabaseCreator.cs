@@ -10,7 +10,7 @@ namespace DemoTGBotOnCSharp.Database
         public DatabaseCreator()
         {
             connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
-                ?? throw new InvalidOperationException("Строка подключения к БД не найдена в .env");
+                ?? throw new InvalidOperationException("Database connection string not found");
         }
 
         public async Task CreateDatabaseAsync()
@@ -54,7 +54,7 @@ namespace DemoTGBotOnCSharp.Database
 
             await connection.CloseAsync();
 
-            Console.WriteLine("[БД] Подключение установлено. Таблица Users и Files проверены/созданы");
+            Console.WriteLine("Connection established. The Users and Files tables have been checked/created.");
         }
 
         private async Task CreateTable(MySqlConnection connection, string sqlQuery)

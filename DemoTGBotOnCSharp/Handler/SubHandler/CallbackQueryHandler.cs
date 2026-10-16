@@ -14,6 +14,7 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
         public async Task HandleAsync(ITelegramBotClient botClient, Update update, CancellationToken cts)
         {
             // Достаем объект callback-запроса
+            // Retrieve the callback request object
             var callbackQuery = update?.CallbackQuery;
             if (callbackQuery == null) throw new NullUpdateException("CallbackQuery not received");
 
@@ -23,7 +24,8 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
             long chatId = callbackQuery.Message!.Chat.Id;
             if (chatId == 0) throw new NullUpdateException("ChatId is 0");
 
-            // Получаем callbackdata
+            // Получаем callbackData
+            // Retrieve the callbackData
             string? buttonData = callbackQuery.Data;
 
             switch (buttonData)
@@ -83,6 +85,7 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         string? l_name = "no data";
                         string? username = "no data";
                         string? word = "no data";
+                        // Добавляем юзера если его нет в базе данных
                         // Add a user if there is no data in the database.
                         if (user != null)
                         {

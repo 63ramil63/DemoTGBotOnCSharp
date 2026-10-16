@@ -1,12 +1,15 @@
 ﻿using DemoTGBotOnCSharp.Repositories.DTO;
 using DemoTGBotOnCSharp.Repositories.Interface;
 using MySqlConnector;
+using System.Runtime.Intrinsics.X86;
+using Telegram.Bot.Types;
 
 namespace DemoTGBotOnCSharp.Repositories
 {
     internal class UserRepository : IUserRepository
     {
         // Потокобезопасное создание singleton при помощи Lazy
+        // Thread-safe singleton creation using Lazy
         private static readonly Lazy<UserRepository> _instance =
             new Lazy<UserRepository>(() => new UserRepository());
 
@@ -29,13 +32,17 @@ namespace DemoTGBotOnCSharp.Repositories
             using var command = new MySqlCommand(SELECT_USER_BY_ID, connection);
 
             // Безопасно добавляем параметры, защищаясь от SQL инъекций
+            // Adding parameters safely, while protecting against SQL injection
             command.Parameters.AddWithValue("@chatId", chatId);
 
             // ExecuteReaderAsync читает строки асинхронно, не блокируя бота
+            // ExecuteReaderAsync reads rows asynchronously, without blocking the bot
             using var reader = await command.ExecuteReaderAsync();
 
             if (await reader.ReadAsync())
             {
+                // Получаем номер столбца
+                // Get the column number
                 int firstNameOrdinal = reader.GetOrdinal("FirstName");
                 int lastNameOrdinal = reader.GetOrdinal("LastName");
                 int userNameOrdinal = reader.GetOrdinal("UserName");
@@ -56,7 +63,9 @@ namespace DemoTGBotOnCSharp.Repositories
 
                 return userDTO;
             }
-            return null; // Возврат null если так и не нашли пользователя с указанным Id
+            // Returns null if a user with the specified ID was not found.
+            // Возврат null если так и не нашли пользователя с указанным Id
+            return null; 
         }
         public async Task<string?> GetUserWordById(long? chatId)
         {
@@ -64,9 +73,13 @@ namespace DemoTGBotOnCSharp.Repositories
             await connection.OpenAsync();
 
             using var command = new MySqlCommand(SELECT_WORD_BY_ID, connection);
+
+            // Безопасно добавляем параметры, защищаясь от SQL инъекций
+            // Adding parameters safely, while protecting against SQL injection
             command.Parameters.AddWithValue("@chatId", chatId);
 
             // Так как мы запрашиваем ровно одно поле (Word), быстрее использовать ExecuteScalarAsync
+            // Since we are requesting exactly one field(Word), it is faster to use ExecuteScalarAsync
             Object? result = await command.ExecuteScalarAsync();
 
             if (result == null || result == DBNull.Value)
@@ -82,6 +95,8 @@ namespace DemoTGBotOnCSharp.Repositories
             await connection.OpenAsync();
 
             using var command = new MySqlCommand(ADD_NEW_USER, connection);
+            // Безопасно добавляем параметры
+            // Safely adding parameters
             command.Parameters.AddWithValue("@chatId", id);
             command.Parameters.AddWithValue("@f_name", (object?)f_name ?? DBNull.Value);
             command.Parameters.AddWithValue("@l_name", (object?)l_name ?? DBNull.Value);
@@ -96,6 +111,8 @@ namespace DemoTGBotOnCSharp.Repositories
             await connection.OpenAsync();
 
             using var command = new MySqlCommand(SET_USER_WORD, connection);
+            // Безопасно добавляем параметры
+            // Safely adding parameters
             command.Parameters.AddWithValue("@chatId", id);
             command.Parameters.AddWithValue("@word", word);
 

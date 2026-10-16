@@ -27,12 +27,14 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
             try
             {
                 // Десериализуем данные из JSON в C# объект
+                // Deserializing data from JSON into a C# object
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var result = JsonSerializer.Deserialize<WebAppGameResult>(rawJson, options);
 
                 if (result != null)
                 {
                     // Записываем результат напрямую в базу данных
+                    // Write result directly to the database
                     await GameScoreRepository.Instance.SaveGameScore(chatId, result.Score);
                     int? playerRank = await GameScoreRepository.Instance.GetPlayerRankAsync(chatId);
 

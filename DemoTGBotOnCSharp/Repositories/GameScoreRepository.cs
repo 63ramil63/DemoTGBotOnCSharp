@@ -8,6 +8,7 @@ namespace DemoTGBotOnCSharp.Repositories
     internal class GameScoreRepository : IGameScoreRepository
     {
         // Потокобезопасное создание singleton при помощи Lazy
+        // Thread-safe singleton creation using Lazy
         private static readonly Lazy<GameScoreRepository> _instance =
             new Lazy<GameScoreRepository>(() => new GameScoreRepository());
 
@@ -20,6 +21,7 @@ namespace DemoTGBotOnCSharp.Repositories
             ON DUPLICATE KEY UPDATE 
             Score = IF(@score > Score, @score, Score);";
         // @ Позволяет переносить строки без использования + 
+        // @ Allows line breaks without using +
         private string GET_PLAYER_RANK = @"
             SELECT player_rank
             FROM (
@@ -43,13 +45,17 @@ namespace DemoTGBotOnCSharp.Repositories
             using var command = new MySqlCommand(SELECT_SCORE_BY_ID, connection);
 
             // Безопасно добавляем параметры
+            // Safely adding parameters
             command.Parameters.AddWithValue("@chatId", chatId);
 
             // ExecuteReaderAsync читает строки асинхронно, не блокируя бота
+            // ExecuteReaderAsync reads rows asynchronously, without blocking the bot.
             using var reader = await command.ExecuteReaderAsync();
 
             if (await reader.ReadAsync())
             {
+                // Получаем номер столбца
+                // Get the column number
                 int scoreOrdinal = reader.GetOrdinal("Score");
                 int updatedAtOrdinal = reader.GetOrdinal("UpdatedAt");
 
@@ -65,6 +71,9 @@ namespace DemoTGBotOnCSharp.Repositories
                 return gameScoreDTO;
             }
 
+
+            // Return null if a game score with specified ChatId was not found
+            // Возращаем null если нет результата
             return null;
         }
 
@@ -76,6 +85,7 @@ namespace DemoTGBotOnCSharp.Repositories
             using var command = new MySqlCommand(SAVE_GAME_SCORE, connection);
 
             // Безопасно добавляем параметры
+            // Safely adding parameters
             command.Parameters.AddWithValue("@chatId", chatId);
             command.Parameters.AddWithValue("@score", score);
 
@@ -90,9 +100,11 @@ namespace DemoTGBotOnCSharp.Repositories
             using var command = new MySqlCommand(GET_PLAYER_RANK, connection);
 
             // Безопасно добавляем параметры
+            // Safely adding parameters
             command.Parameters.AddWithValue("@chatId", chatId);
-            
+
             // Получаем скалярное значение (одно число - место)
+            // Obtain a scalar quantity (a single number—position).
             var result = await command.ExecuteScalarAsync();
 
             if (result != null && result != DBNull.Value)
