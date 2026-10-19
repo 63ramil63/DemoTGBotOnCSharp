@@ -4,6 +4,8 @@ using DemoTGBotOnCSharp.Handler.Exceptions;
 using DemoTGBotOnCSharp.Handler.SubHandler;
 using DemoTGBotOnCSharp.Handler.SubHandler.Interface;
 using DemoTGBotOnCSharp.MarkupBuilder;
+using DemoTGBotOnCSharp.Services.Localization;
+using DemoTGBotOnCSharp.Services.UserCache;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -55,23 +57,40 @@ namespace DemoTGBotOnCSharp.Handler
             {
                 Console.WriteLine($"File is not exists : {e.Message}");
 
-                string m_text = "File not found(\nPlease send new file";
+                var message = update!.CallbackQuery!.Message;
+
+                long chatId = message!.Chat.Id;
+                int messageId = message!.MessageId;
+
+                string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+                string mText = LocalizationService.Get(langCode, "FileNotFound_ex_text");
 
                 await botClient.EditMessageText(
-                    chatId: update!.CallbackQuery!.Message!.Chat.Id,
-                    messageId: update!.CallbackQuery!.Message!.MessageId,
-                    text: m_text,
-                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back", "/menu"),
+                    chatId: chatId,
+                    messageId: messageId,
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                     cancellationToken: cancellationToken
                 );
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Exception, message is : {e.Message}");
+
+                var message = update!.CallbackQuery!.Message;
+
+                long chatId = message!.Chat.Id;
+                int messageId = message!.MessageId;
+                
+                string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+                string mText = LocalizationService.Get(langCode, "Basic_ex_text");
+
                 await botClient.SendMessage(
-                    chatId: update!.CallbackQuery!.Message!.Chat.Id,
-                    text: $"An error occurred: {e.Message}\nTry again",
-                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    chatId: chatId,
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(langCode),
                     cancellationToken: cancellationToken
                 );
             }
@@ -90,12 +109,19 @@ namespace DemoTGBotOnCSharp.Handler
             {
                 Console.WriteLine($"File Exists exception, message is : {e.Message}");
 
-                string m_text = "File with this name already exist. Please try another file or rename it";
+                var message = update!.Message;
+
+                long chatId = message!.Chat.Id;
+
+                string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+
+                string mText = LocalizationService.Get(langCode, "FileAlreadyExists_ex_text");
 
                 await botClient.SendMessage(
                     chatId: update!.Message!.Chat.Id,
-                    text: m_text,
-                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                     cancellationToken: cancellationToken
                 );
             }
@@ -103,22 +129,38 @@ namespace DemoTGBotOnCSharp.Handler
             {
                 Console.WriteLine($"File extension is not allowed : {e.Message}");
 
-                string m_text = $"File extension is not allowed, please send file with these extensions: {string.Join(",", FileController.Instance.AllowedExtension)}";
+                var message = update!.Message;
+
+                long chatId = message!.Chat.Id;
+
+                string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+                
+                string mText = LocalizationService.Get(langCode, "FileExtensionNotAllowed_ex_text", string.Join(", ", FileController.Instance.AllowedExtension));
 
                 await botClient.SendMessage(
-                    chatId: update!.Message!.Chat.Id,
-                    text: m_text,
-                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                    chatId: chatId,
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                     cancellationToken: cancellationToken
                 );
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Exception, message is : {e.Message}");
+
+                var message = update!.CallbackQuery!.Message;
+
+                long chatId = message!.Chat.Id;
+
+                string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+                string mText = LocalizationService.Get(langCode, "Basic_ex_text");
+
                 await botClient.SendMessage(
-                    chatId: update!.Message!.Chat.Id,
-                    text: $"An error occurred.\nTry again!",
-                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    chatId: chatId,
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(langCode),
                     cancellationToken: cancellationToken
                 );
             }
@@ -137,10 +179,19 @@ namespace DemoTGBotOnCSharp.Handler
             catch (Exception e)
             {
                 Console.WriteLine($"Exception, message is : {e.Message}");
+
+                var message = update!.CallbackQuery!.Message;
+
+                long chatId = message!.Chat.Id;
+
+                string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+                string mText = LocalizationService.Get(langCode, "Basic_ex_text");
+
                 await botClient.SendMessage(
-                    chatId: update!.Message!.Chat.Id,
-                    text: "An error occurred: {e.Message}\nTry again",
-                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    chatId: chatId,
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(langCode),
                     cancellationToken: cancellationToken
                 );
             }
@@ -159,10 +210,18 @@ namespace DemoTGBotOnCSharp.Handler
             catch (Exception e)
             {
                 Console.WriteLine($"Exception, message is : {e.Message}");
+                var message = update!.CallbackQuery!.Message;
+
+                long chatId = message!.Chat.Id;
+
+                string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+                string mText = LocalizationService.Get(langCode, "Basic_ex_text");
+
                 await botClient.SendMessage(
-                    chatId: update!.Message!.Chat.Id,
-                    text: "An error occurred: {e.Message}\nTry again",
-                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                    chatId: chatId,
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMenuMarkup(langCode),
                     cancellationToken: cancellationToken
                 );
             }

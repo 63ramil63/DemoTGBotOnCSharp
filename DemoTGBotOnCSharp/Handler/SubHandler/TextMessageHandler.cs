@@ -5,6 +5,8 @@ using DemoTGBotOnCSharp.Repositories.DTO;
 using DemoTGBotOnCSharp.Handler.Exceptions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using DemoTGBotOnCSharp.Services.UserCache;
+using DemoTGBotOnCSharp.Services.Localization;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {
@@ -21,9 +23,12 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
             string? text = message!.Text;
             if (text == null) throw new NullUpdateException("Text is null");
 
+            // Return 'en' by default
+            string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
             switch (text)
             {
-                case "/start":
+                case "/start" or "/change_lang":
                     {
                         UserDTO? user = await UserRepository.Instance.GetUserById(chatId);
                         if (user == null)
@@ -34,12 +39,17 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                             await UserRepository.Instance.AddNewUser(chatId, f_name, l_name, username);
                         }
 
-                        string m_text = "Welcome to demonstration bot!";
+                        string mText = "Select language";
+
+                        var markup = InlineMarkupBuilder.GetMarkupFromMassive(
+                            ("Set English language", "/en_Lang"),
+                            ("Сменить язык на Русский", "/ru_Lang")
+                        );
 
                         await botClient.SendMessage(
                             chatId: chatId,
-                            text: m_text,
-                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Menu", "/menu"),
+                            text: mText,
+                            replyMarkup: markup,
                             cancellationToken: cts
                         );
                         return;
@@ -48,23 +58,23 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                     {
                         string? word = await UserRepository.Instance.GetUserWordById(chatId);
                         if (string.IsNullOrEmpty(word))
-                        {
-                            string m_text = "You haven't saved your word yet! Write '/word your_word'";
+                        {                           
+                            string mText = LocalizationService.Get(langCode, "WordIsNull_text");
                             await botClient.SendMessage(
                                 chatId: chatId,
-                                text: m_text,
-                                replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                                text: mText,
+                                replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                                 cancellationToken: cts
                             );
                             return;
                         }
                         else
                         {
-                            string m_text = "Your word: " + word;
+                            string mText = LocalizationService.Get(langCode, "HasWord_text", word);
                             await botClient.SendMessage(
                                 chatId: chatId,
-                                text: m_text,
-                                replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                                text: mText,
+                                replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                                 cancellationToken: cts
                             );
                             return;
@@ -80,18 +90,22 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                         List<string> userFiles = await fileRepository!.GetFilesByUserId(chatId);
                         if (userFiles.Count == 0)
                         {
+                            string mText = LocalizationService.Get(langCode, "FilesNotFound_text");
+
                             await botClient.SendMessage(
                                 chatId: chatId,
-                                text: "You haven't sent any files to the bot yet.",
+                                text: mText,
                                 cancellationToken: cts
                             );
                         }
                         else
                         {
+                            string mText = LocalizationService.Get(langCode, "FilesFound_text");
+
                             await botClient.SendMessage(
                                 chatId: chatId,
-                                text: "Select file",
-                                replyMarkup: InlineMarkupBuilder.GetMarkupFromListWithSuffix(userFiles, "_File", 1),
+                                text: mText,
+                                replyMarkup: InlineMarkupBuilder.GetMarkupFromListWithSuffix(userFiles, "_File", 1, langCode),
                                 cancellationToken: cts
                                 );
                         }
@@ -101,37 +115,41 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                     {
                         int messageId = message.Id;
 
-                        string m_text = "If you are interested in anything or would like to ask a question, feel free to write.\n@wrotoftanks63";
+                        string mText = LocalizationService.Get(langCode, "Contact_text");
 
                         await botClient.EditMessageText(
                             chatId: chatId,
                             messageId: messageId,
-                            text: m_text,
-                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                            text: mText,
+                            replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                             cancellationToken: cts
                         );
                         return;
                     }
                 case "/game":
                     {
+                        string mText = LocalizationService.Get(langCode, "Game_text");
+
                         await botClient.SendMessage(
                             chatId: chatId,
-                            text: "Press the button to play mini game!",
-                            replyMarkup: InlineMarkupBuilder.GetGameStartReplyMarkup(),
+                            text: mText,
+                            replyMarkup: InlineMarkupBuilder.GetGameStartReplyMarkup(langCode),
                             cancellationToken: cts
                         );
                         return;
                     }
                 case "/menu":
                     {
+                        string mText = LocalizationService.Get(langCode, "Menu_text");
+
                         await botClient.SendMessage(
                             chatId: chatId,
-                            text: "Select option from a list",
-                            replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                            text: mText,
+                            replyMarkup: InlineMarkupBuilder.GetMenuMarkup(langCode),
                             cancellationToken: cts
                         );
                         return;
-                    }
+                    }  
             }
 
             if (text.StartsWith("/word"))
@@ -139,12 +157,12 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                 string f_text = text.Replace("/word", "").Trim();
                 if (string.IsNullOrEmpty(f_text))
                 {
-                    string m_text = "Invalid format, example: '/word ваше_слово'";
+                    string mText = LocalizationService.Get(langCode, "WordIsNull_text");
 
                     await botClient.SendMessage(
                         chatId: chatId,
-                        text: m_text,
-                        replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                        text: mText,
+                        replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                         cancellationToken: cts
                     );
                     return;
@@ -152,12 +170,12 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
                 else
                 {
                     await UserRepository.Instance.SetUserWord(chatId, f_text);
-                    string m_text = "Your word has been saved; you can retrieve it by sending the message /get_word.";
+                    string mText = LocalizationService.Get(langCode, "WordSaved_text");
 
                     await botClient.SendMessage(
                         chatId: chatId,
-                        text: m_text,
-                        replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                        text: mText,
+                        replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                         cancellationToken: cts
                     );
                     return;

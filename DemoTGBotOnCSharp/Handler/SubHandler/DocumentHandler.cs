@@ -5,6 +5,8 @@ using DemoTGBotOnCSharp.Handler.Exceptions;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using DemoTGBotOnCSharp.MarkupBuilder;
+using DemoTGBotOnCSharp.Services.Localization;
+using DemoTGBotOnCSharp.Services.UserCache;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {
@@ -31,10 +33,18 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
 
             await fileRepository.AddNewFile(fileName, chatId);
 
+            string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
+            string mText = LocalizationService.Get(langCode, "FileSaved");
+
+            string buttonText = LocalizationService.Get(langCode, "ShowFilesBtn_text");
+
             await botClient.SendMessage(
                 chatId: chatId,
-                text: "You can view the files you sent here by typing '/files' or '/menu'",
-                replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Show files", "/files"),
+                text: mText,
+                replyMarkup: InlineMarkupBuilder.GetMarkupFromMassive(
+                    (buttonText, "/files")
+                ),
                 cancellationToken: cts
             );
         }

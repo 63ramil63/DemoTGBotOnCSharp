@@ -6,6 +6,8 @@ using System.Text.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using System.Text.Json.Serialization;
+using DemoTGBotOnCSharp.Services.UserCache;
+using DemoTGBotOnCSharp.Services.Localization;
 
 namespace DemoTGBotOnCSharp.Handler.SubHandler
 {
@@ -24,6 +26,8 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
 
             string rawJson = webAppData.Data;
 
+            string langCode = await UserCacheService.Instance.GetUserLanguage(chatId);
+
             try
             {
                 // Десериализуем данные из JSON в C# объект
@@ -40,25 +44,26 @@ namespace DemoTGBotOnCSharp.Handler.SubHandler
 
                     string rankText = playerRank.HasValue ? $"{playerRank.Value}" : "Not ranked yet";
 
-                    string m_text = $"🎮 Congratulations, your score is : {result.Score}\n" +
-                        $"🏆 Your rank is {rankText}";
+                    string mText = LocalizationService.Get(langCode, "GameEnd_text", result.Score, rankText);
 
                     await botClient.SendMessage(
                         chatId: chatId,
-                        text: m_text,
+                        text: mText,
                         parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown,
-                        replyMarkup: InlineMarkupBuilder.GetMenuMarkup(),
+                        replyMarkup: InlineMarkupBuilder.GetMenuMarkup(langCode),
                         cancellationToken: cts
                     );
                 }
             }
             catch (Exception ex)
             {
+                string mText = LocalizationService.Get(langCode, "ScoreSaveError_text");
+
                 Console.WriteLine($"Error saving the record: {ex.Message}");
                 await botClient.SendMessage(
                     chatId: chatId,
-                    text: "❌ Failed to save your record",
-                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOneButton("Back to menu", "/menu"),
+                    text: mText,
+                    replyMarkup: InlineMarkupBuilder.GetMarkupWithOnlyBackButton(langCode),
                     cancellationToken: cts
                 );
             }

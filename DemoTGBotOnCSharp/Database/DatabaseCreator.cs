@@ -29,7 +29,8 @@ namespace DemoTGBotOnCSharp.Database
                     LastName VARCHAR(255),
                     UserName VARCHAR(255),
                     IsAdmin BOOLEAN DEFAULT FALSE,
-                    Word VARCHAR(255)
+                    Word VARCHAR(255),
+                    LanguageCode VARCHAR(10) DEFAULT 'en'
                 );";
 
             await CreateTable(connection, createUsersTable);
@@ -50,7 +51,6 @@ namespace DemoTGBotOnCSharp.Database
                 );";
 
             await CreateTable(connection, createGameScoreTable);
-
 
             await connection.CloseAsync();
 

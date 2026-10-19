@@ -1,5 +1,6 @@
 ﻿using DemoTGBotOnCSharp.Database;
 using DemoTGBotOnCSharp.Handler;
+using DemoTGBotOnCSharp.Repositories;
 using DotNetEnv;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
@@ -38,6 +39,8 @@ namespace DemoTGBotOnCSharp
             // Creating tables in a database
             var databaseCreator = new DatabaseCreator();
             await databaseCreator.CreateDatabaseAsync();
+
+            InitializeComponents();
 
             string botToken = Environment.GetEnvironmentVariable("TG_BOT_TOKEN");
 
@@ -84,16 +87,28 @@ namespace DemoTGBotOnCSharp
         // Creating commands that will be positioned to the left of the message input field
         private static async Task ConfigureBotCommandAsync(ITelegramBotClient botClient)
         {
-            var command = new List<BotCommand>
+            var commands = new List<BotCommand>
             {
                 new BotCommand { Command = "start", Description = "Hello message with register in MySQL database"},
                 new BotCommand { Command = "menu", Description = "Bot menu with main commands"},
                 new BotCommand { Command = "contact", Description = "Contact with bot's creator"},
+                new BotCommand { Command = "change_lang", Description = "Change language"}
             };
 
-            await botClient.SetMyCommands(command);
+            await botClient.SetMyCommands(commands);
 
             Console.WriteLine("Menu's button succesfuly updated");
+        }
+
+        private static void InitializeComponents()
+        {
+            var userRepository = UserRepository.Instance;
+            var gameScoreRepository = GameScoreRepository.Instance;
+            var fileRepository = FileRepository.Instance;
+
+            userRepository = null;
+            gameScoreRepository = null;
+            fileRepository = null;
         }
     }
 }

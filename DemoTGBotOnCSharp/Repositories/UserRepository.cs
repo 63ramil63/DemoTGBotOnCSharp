@@ -1,8 +1,6 @@
 ﻿using DemoTGBotOnCSharp.Repositories.DTO;
 using DemoTGBotOnCSharp.Repositories.Interface;
 using MySqlConnector;
-using System.Runtime.Intrinsics.X86;
-using Telegram.Bot.Types;
 
 namespace DemoTGBotOnCSharp.Repositories
 {
@@ -19,12 +17,14 @@ namespace DemoTGBotOnCSharp.Repositories
         private string SELECT_WORD_BY_ID = "SELECT Word FROM Users WHERE ChatId = @chatId";
         private string ADD_NEW_USER = "INSERT INTO Users (ChatId, FirstName, LastName, UserName) VALUES (@chatId, @f_name, @l_name, @userName)";
         private string SET_USER_WORD = "UPDATE Users SET Word = @word WHERE ChatId = @chatId";
+        private string SET_USER_LANGUAGE = "UPDATE Users SET LanguageCode = @lang WHERE ChatId = @chatId";
+        private string GET_USER_LANGUAGE = "SELECT LanguageCode FROM Users WHERE ChatId = @chatId";
         public UserRepository()
         {
             connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
                 ?? throw new InvalidOperationException("Database connection string not found");
         }
-        public async Task<UserDTO?> GetUserById(long? chatId)
+        public async Task<UserDTO?> GetUserById(long chatId)
         {
             using var connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
@@ -51,7 +51,7 @@ namespace DemoTGBotOnCSharp.Repositories
 
                 var userDTO = new UserDTO
                 {
-                    chatId = chatId.Value,
+                    chatId = chatId,
                     f_name = reader.IsDBNull(firstNameOrdinal) ? null : reader.GetString(firstNameOrdinal),
                     l_name = reader.IsDBNull(lastNameOrdinal) ? null : reader.GetString(lastNameOrdinal),
                     username = reader.IsDBNull(userNameOrdinal) ? null : reader.GetString(userNameOrdinal),
@@ -67,7 +67,7 @@ namespace DemoTGBotOnCSharp.Repositories
             // Возврат null если так и не нашли пользователя с указанным Id
             return null; 
         }
-        public async Task<string?> GetUserWordById(long? chatId)
+        public async Task<string?> GetUserWordById(long chatId)
         {
             using var connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
@@ -89,7 +89,7 @@ namespace DemoTGBotOnCSharp.Repositories
             return result.ToString();
         }
 
-        public async Task AddNewUser(long? id, string? f_name, string? l_name, string? username)
+        public async Task AddNewUser(long id, string? f_name, string? l_name, string? username)
         {
             using var connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
@@ -105,7 +105,7 @@ namespace DemoTGBotOnCSharp.Repositories
             await command.ExecuteNonQueryAsync();
         }
 
-        public async Task SetUserWord(long? id, string? word)
+        public async Task SetUserWord(long id, string? word)
         {
             using var connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
@@ -117,6 +117,42 @@ namespace DemoTGBotOnCSharp.Repositories
             command.Parameters.AddWithValue("@word", word);
 
             await command.ExecuteNonQueryAsync();
+        }
+
+        public async Task SetUserLangCode(long chatId, string langCode)
+        {
+            using var connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var command = new MySqlCommand(SET_USER_LANGUAGE, connection);
+            // Безопасно добавляем параметры
+            // Safely adding parameters
+            command.Parameters.AddWithValue("@lang", langCode);
+            command.Parameters.AddWithValue("@chatId", chatId);
+
+            await command.ExecuteNonQueryAsync();
+        }
+
+        public async Task<string> GetUserLangCode(long chatId)
+        {
+            using var connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            using var command = new MySqlCommand(GET_USER_LANGUAGE, connection);
+            // Безопасно добавляем параметры
+            // Safely adding parameters
+            command.Parameters.AddWithValue("@chatId", chatId);
+
+            // Так как мы запрашиваем ровно одно поле (LangCode), быстрее использовать ExecuteScalarAsync
+            // Since we are requesting exactly one field(LangCode), it is faster to use ExecuteScalarAsync
+            Object? result = await command.ExecuteScalarAsync();
+
+            if (result == null || result == DBNull.Value)
+            {
+                return "en";
+            }
+
+            return result.ToString();
         }
     }
 }
